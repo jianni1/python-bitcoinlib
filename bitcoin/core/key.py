@@ -31,7 +31,11 @@ if sys.version > '3':
 
 import bitcoin.core.script
 
-_ssl = ctypes.cdll.LoadLibrary(ctypes.util.find_library('ssl') or 'libeay32')
+_libssl_path = ctypes.util.find_library('ssl')
+# Work around Android shared library restriction since Android N
+# https://android-developers.googleblog.com/2016/06/improving-stability-with-private-cc.html
+_libssl_path = 'libssl1.1.so' if _libssl_path == '/system/lib/libssl.so' else _libssl_path
+_ssl = ctypes.cdll.LoadLibrary(_libssl_path)
 
 _libsecp256k1_path = ctypes.util.find_library('secp256k1')
 _libsecp256k1_enable_signing = False
