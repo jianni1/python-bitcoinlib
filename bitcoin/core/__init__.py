@@ -387,9 +387,9 @@ class CTxWitness(ImmutableSerializable):
 
 class CTransaction(ImmutableSerializable):
     """A transaction"""
-    __slots__ = ['nVersion', 'vin', 'vout', 'nLockTime', 'wit']
+    __slots__ = ['nVersion', 'vin', 'vout', 'nLockTime', 'wit', 'nTime']
 
-    def __init__(self, vin=(), vout=(), nLockTime=0, nVersion=1, witness=CTxWitness()):
+    def __init__(self, vin=(), vout=(), nLockTime=0, nVersion=1, witness=CTxWitness(), nTime=None):
         """Create a new transaction
 
         vin and vout are iterables of transaction inputs and outputs
@@ -403,9 +403,10 @@ class CTransaction(ImmutableSerializable):
         object.__setattr__(self, 'vin', tuple(CTxIn.from_txin(txin) for txin in vin))
         object.__setattr__(self, 'vout', tuple(CTxOut.from_txout(txout) for txout in vout))
         object.__setattr__(self, 'wit', CTxWitness.from_txwitness(witness))
+        object.__setattr__(self, 'nTime', nTime)
 
     @classmethod
-    def stream_deserialize(cls, f):
+    def stream_deserialize(cls, f, hasTimestamp:bool=False):
         """Deserialize transaction
 
         This implementation corresponds to Bitcoin's SerializeTransaction() and
@@ -419,6 +420,7 @@ class CTransaction(ImmutableSerializable):
         """
         # FIXME can't assume f is seekable
         nVersion = struct.unpack(b"<i", ser_read(f,4))[0]
+        nTime = struct.unpack(b"<i", ser_read(f,4))[0] if hasTimestamp else None
         pos = f.tell()
         markerbyte = struct.unpack(b'B', ser_read(f, 1))[0]
         flagbyte = struct.unpack(b'B', ser_read(f, 1))[0]
@@ -439,6 +441,8 @@ class CTransaction(ImmutableSerializable):
 
     def stream_serialize(self, f, include_witness=True):
         f.write(struct.pack(b"<i", self.nVersion))
+        if self.nTime:
+            f.write(struct.pack(b"<i", self.nTime))
         if include_witness and not self.wit.is_null():
             assert(len(self.wit.vtxinwit) <= len(self.vin))
             f.write(b'\x00') # Marker
@@ -491,7 +495,7 @@ class CMutableTransaction(CTransaction):
     """A mutable transaction"""
     __slots__ = []
 
-    def __init__(self, vin=None, vout=None, nLockTime=0, nVersion=1, witness=None):
+    def __init__(self, vin=None, vout=None, nLockTime=0, nVersion=1, witness=None, nTime=None):
         if not (0 <= nLockTime <= 0xffffffff):
             raise ValueError('CTransaction: nLockTime must be in range 0x0 to 0xffffffff; got %x' % nLockTime)
         self.nLockTime = nLockTime
@@ -509,13 +513,15 @@ class CMutableTransaction(CTransaction):
             witness = CTxWitness([CTxInWitness() for dummy in range(len(vin))])
         self.wit = witness
 
+        self.nTime = nTime
+
     @classmethod
     def from_tx(cls, tx):
         """Create a fully mutable copy of a pre-existing transaction"""
         vin = [CMutableTxIn.from_txin(txin) for txin in tx.vin]
         vout = [CMutableTxOut.from_txout(txout) for txout in tx.vout]
 
-        return cls(vin, vout, tx.nLockTime, tx.nVersion, tx.wit)
+        return cls(vin, vout, tx.nLockTime, tx.nVersion, tx.wit, tx.nTime)
 
 
 class CBlockHeader(ImmutableSerializable):
