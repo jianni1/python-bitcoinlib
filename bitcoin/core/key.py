@@ -34,7 +34,8 @@ import bitcoin.core.script
 _libssl_path = ctypes.util.find_library('ssl')
 # Work around Android shared library restriction since Android N
 # https://android-developers.googleblog.com/2016/06/improving-stability-with-private-cc.html
-_libssl_path = 'libssl1.1.so' if _libssl_path == '/system/lib/libssl.so' else _libssl_path
+if _libssl_path in ('/system/lib/libssl.so', '/system/lib64/libssl.so'):
+    _libssl_path = 'libssl1.1.so' # packaged libssl by kivy for android
 _ssl = ctypes.cdll.LoadLibrary(_libssl_path)
 
 _libsecp256k1_path = ctypes.util.find_library('secp256k1')
