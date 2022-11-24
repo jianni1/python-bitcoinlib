@@ -9,14 +9,13 @@
 # propagated, or distributed except according to the terms contained in the
 # LICENSE file.
 
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import bitcoin.core
 
 # Note that setup.py can break if __init__.py imports any external
 # dependencies, as these might not be installed when setup.py runs. In this
 # case __version__ could be moved to a separate version.py and imported here.
-__version__ = '0.11.0'
+__version__ = '0.11.2'
 
 class MainParams(bitcoin.core.CoreMainParams):
     MESSAGE_START = b'\xf9\xbe\xb4\xd9'
@@ -44,6 +43,17 @@ class TestNetParams(bitcoin.core.CoreTestNetParams):
     BASE58_PREFIXES = {'PUBKEY_ADDR':111,
                        'SCRIPT_ADDR':196,
                        'SECRET_KEY' :239}
+    BECH32_HRP = 'tb'
+
+class SigNetParams(bitcoin.core.CoreSigNetParams):
+    MESSAGE_START = b'\x0a\x03\xcf\x40'
+    DEFAULT_PORT = 38333
+    RPC_PORT = 38332
+    DNS_SEEDS = (("signet.bitcoin.sprovoost.nl", "seed.signet.bitcoin.sprovoost.nl"))
+    BASE58_PREFIXES = {'PUBKEY_ADDR':111,
+                       'SCRIPT_ADDR':196,
+                       'SECRET_KEY' :239}
+
     BECH32_HRP = 'tb'
 
 class RegTestParams(bitcoin.core.CoreRegTestParams):
@@ -79,5 +89,7 @@ def SelectParams(name):
         params = bitcoin.core.coreparams = TestNetParams()
     elif name == 'regtest':
         params = bitcoin.core.coreparams = RegTestParams()
+    elif name == 'signet':
+        params = bitcoin.core.coreparams = SigNetParams()
     else:
         raise ValueError('Unknown chain %r' % name)

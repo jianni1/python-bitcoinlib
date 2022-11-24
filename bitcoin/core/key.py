@@ -18,20 +18,14 @@ disk in swap! Use with caution!
 import ctypes
 import ctypes.util
 import hashlib
-import sys
 from os import urandom
 import bitcoin
 import bitcoin.signature
 
-_bchr = chr
-_bord = ord
-if sys.version > '3':
-    _bchr = lambda x: bytes([x])
-    _bord = lambda x: x
-
 import bitcoin.core.script
 
-_libssl_path = ctypes.util.find_library('ssl')
+
+_libssl_path = ctypes.util.find_library('ssl.35') or ctypes.util.find_library('ssl')
 # Work around Android shared library restriction since Android N
 # https://android-developers.googleblog.com/2016/06/improving-stability-with-private-cc.html
 if _libssl_path in ('/system/lib/libssl.so', '/system/lib64/libssl.so'):
@@ -590,8 +584,8 @@ class CPubKey(bytes):
         if len(sig) != 65:
             raise ValueError("Signature should be 65 characters, not [%d]" % (len(sig), ))
 
-        recid = (_bord(sig[0]) - 27) & 3
-        compressed = (_bord(sig[0]) - 27) & 4 != 0
+        recid = (sig[0] - 27) & 3
+        compressed = (sig[0] - 27) & 4 != 0
 
         cec_key = CECKey()
         cec_key.set_compressed(compressed)
@@ -623,12 +617,7 @@ class CPubKey(bytes):
         return repr(self)
 
     def __repr__(self):
-        # Always have represent as b'<secret>' so test cases don't have to
-        # change for py2/3
-        if sys.version > '3':
-            return '%s(%s)' % (self.__class__.__name__, super(CPubKey, self).__repr__())
-        else:
-            return '%s(b%s)' % (self.__class__.__name__, super(CPubKey, self).__repr__())
+        return '%s(%s)' % (self.__class__.__name__, super(CPubKey, self).__repr__())
 
 __all__ = (
         'CECKey',

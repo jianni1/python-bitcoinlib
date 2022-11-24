@@ -9,28 +9,22 @@
 # propagated, or distributed except according to the terms contained in the
 # LICENSE file.
 
-from __future__ import absolute_import, division, print_function
 
 import binascii
 import struct
-import sys
 import time
 
-from .script import CScript, CScriptWitness, CScriptOp, OP_RETURN
+from . import script
+from .script import CScript, CScriptWitness, OP_RETURN
 
 from .serialize import *
-
-if sys.version > '3':
-    _bytes = bytes
-else:
-    _bytes = lambda x: bytes(bytearray(x))
 
 # Core definitions
 COIN = 100000000
 MAX_BLOCK_SIZE = 1000000
 MAX_BLOCK_WEIGHT = 4000000
 MAX_BLOCK_SIGOPS = MAX_BLOCK_SIZE/50
-WITNESS_COINBASE_SCRIPTPUBKEY_MAGIC = _bytes([OP_RETURN, 0x24, 0xaa, 0x21, 0xa9, 0xed])
+WITNESS_COINBASE_SCRIPTPUBKEY_MAGIC = bytes([OP_RETURN, 0x24, 0xaa, 0x21, 0xa9, 0xed])
 
 def MoneyRange(nValue, params=None):
     global coreparams
@@ -39,29 +33,13 @@ def MoneyRange(nValue, params=None):
 
     return 0 <= nValue <= params.MAX_MONEY
 
-def _py2_x(h):
-    """Convert a hex string to bytes"""
-    return binascii.unhexlify(h)
-
 def x(h):
     """Convert a hex string to bytes"""
     return binascii.unhexlify(h.encode('utf8'))
 
-def _py2_b2x(b):
-    """Convert bytes to a hex string"""
-    return binascii.hexlify(b)
-
 def b2x(b):
     """Convert bytes to a hex string"""
     return binascii.hexlify(b).decode('utf8')
-
-def _py2_lx(h):
-    """Convert a little-endian hex string to bytes
-
-    Lets you write uint256's and uint160's the way the Satoshi codebase shows
-    them.
-    """
-    return binascii.unhexlify(h)[::-1]
 
 def lx(h):
     """Convert a little-endian hex string to bytes
@@ -71,14 +49,6 @@ def lx(h):
     """
     return binascii.unhexlify(h.encode('utf8'))[::-1]
 
-def _py2_b2lx(b):
-    """Convert bytes to a little-endian hex string
-
-    Lets you show uint256's and uint160's the way the Satoshi codebase shows
-    them.
-    """
-    return binascii.hexlify(b[::-1])
-
 def b2lx(b):
     """Convert bytes to a little-endian hex string
 
@@ -86,18 +56,6 @@ def b2lx(b):
     them.
     """
     return binascii.hexlify(b[::-1]).decode('utf8')
-
-if not (sys.version > '3'):
-    x = _py2_x
-    b2x = _py2_b2x
-    lx = _py2_lx
-    b2lx = _py2_b2lx
-
-del _py2_x
-del _py2_b2x
-del _py2_lx
-del _py2_b2lx
-
 
 def str_money_value(value):
     """Convert an integer money value to a fixed point string"""
@@ -758,6 +716,10 @@ class CoreTestNetParams(CoreMainParams):
     NAME = 'testnet'
     GENESIS_BLOCK = CBlock.deserialize(x('0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4adae5494dffff001d1aa4ae180101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff4d04ffff001d0104455468652054696d65732030332f4a616e2f32303039204368616e63656c6c6f72206f6e206272696e6b206f66207365636f6e64206261696c6f757420666f722062616e6b73ffffffff0100f2052a01000000434104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac00000000'))
 
+class CoreSigNetParams(CoreMainParams):
+    NAME = 'signet'
+    GENESIS_BLOCK = CBlock.deserialize(x('0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a008f4d5fae77031e8ad222030101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff4d04ffff001d0104455468652054696d65732030332f4a616e2f32303039204368616e63656c6c6f72206f6e206272696e6b206f66207365636f6e64206261696c6f757420666f722062616e6b73ffffffff0100f2052a01000000434104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac00000000'))
+
 class CoreRegTestParams(CoreTestNetParams):
     NAME = 'regtest'
     GENESIS_BLOCK = CBlock.deserialize(x('0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4adae5494dffff7f20020000000101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff4d04ffff001d0104455468652054696d65732030332f4a616e2f32303039204368616e63656c6c6f72206f6e206272696e6b206f66207365636f6e64206261696c6f757420666f722062616e6b73ffffffff0100f2052a01000000434104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac00000000'))
@@ -780,6 +742,8 @@ def _SelectCoreParams(name):
         coreparams = CoreTestNetParams()
     elif name == 'regtest':
         coreparams = CoreRegTestParams()
+    elif name == 'signet':
+        coreparams = CoreSigNetParams()
     else:
         raise ValueError('Unknown chain %r' % name)
 

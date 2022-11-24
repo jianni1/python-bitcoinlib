@@ -11,25 +11,16 @@
 
 """Serialization routines
 
-You probabably don't need to use these directly.
+You probably don't need to use these directly.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import hashlib
 import struct
 
-# Py3 compatibility
-import sys
+from io import BytesIO
 
-if sys.version > '3':
-    _bchr = lambda x: bytes([x])
-    _bord = lambda x: x[0]
-    from io import BytesIO as _BytesIO
-else:
-    _bchr = chr
-    _bord = ord
-    from cStringIO import StringIO as _BytesIO
+from bitcoin.core.contrib.ripemd160 import ripemd160
 
 MAX_SIZE = 0x02000000
 
@@ -40,10 +31,7 @@ def Hash(msg):
 
 def Hash160(msg):
     """RIPEME160(SHA256(msg)) -> bytes"""
-    h = hashlib.new('ripemd160')
-    h.update(hashlib.sha256(msg).digest())
-    return h.digest()
-
+    return ripemd160(hashlib.sha256(msg).digest())
 
 class SerializationError(Exception):
     """Base class for serialization errors"""
@@ -98,7 +86,7 @@ class Serializable(object):
 
     def serialize(self, params={}):
         """Serialize, returning bytes"""
-        f = _BytesIO()
+        f = BytesIO()
         self.stream_serialize(f, **params)
         return f.getvalue()
 
@@ -111,7 +99,7 @@ class Serializable(object):
         If allow_padding is False and not all bytes are consumed during
         deserialization DeserializationExtraDataError will be raised.
         """
-        fd = _BytesIO(buf)
+        fd = BytesIO(buf)
         r = cls.stream_deserialize(fd, **params)
         if not allow_padding:
             padding = fd.read()
@@ -179,14 +167,14 @@ class Serializer(object):
 
     @classmethod
     def serialize(cls, obj):
-        f = _BytesIO()
+        f = BytesIO()
         cls.stream_serialize(obj, f)
         return f.getvalue()
 
     @classmethod
     def deserialize(cls, buf):
         if isinstance(buf, str) or isinstance(buf, bytes):
-            buf = _BytesIO(buf)
+            buf = BytesIO(buf)
         return cls.stream_deserialize(buf)
 
 
@@ -197,20 +185,20 @@ class VarIntSerializer(Serializer):
         if i < 0:
             raise ValueError('varint must be non-negative integer')
         elif i < 0xfd:
-            f.write(_bchr(i))
+            f.write(bytes([i]))
         elif i <= 0xffff:
-            f.write(_bchr(0xfd))
+            f.write(b'\xfd')
             f.write(struct.pack(b'<H', i))
         elif i <= 0xffffffff:
-            f.write(_bchr(0xfe))
+            f.write(b'\xfe')
             f.write(struct.pack(b'<I', i))
         else:
-            f.write(_bchr(0xff))
+            f.write(b'\xff')
             f.write(struct.pack(b'<Q', i))
 
     @classmethod
     def stream_deserialize(cls, f):
-        r = _bord(ser_read(f, 1))
+        r = ser_read(f, 1)[0]
         if r < 0xfd:
             return r
         elif r == 0xfd:

@@ -59,7 +59,7 @@ Rather confusingly Bitcoin Core shows transaction and block hashes as
 little-endian hex rather than the big-endian the rest of the world uses for
 SHA256. python-bitcoinlib provides the convenience functions x() and lx() in
 bitcoin.core to convert from big-endian and little-endian hex to raw bytes to
-accomodate this. In addition see b2x() and b2lx() for conversion from bytes to
+accommodate this. In addition see b2x() and b2lx() for conversion from bytes to
 big/little-endian hex.
 
 
@@ -75,7 +75,7 @@ appropriately.
 See `examples/` directory. For instance this example creates a transaction
 spending a pay-to-script-hash transaction output:
 
-    $ PYTHONPATH=. examples/spend-pay-to-script-hash-txout.py
+    $ PYTHONPATH=. examples/spend-p2sh-txout.py
     <hex-encoded transaction>
 
 
@@ -86,7 +86,7 @@ Do the following:
     import bitcoin
     bitcoin.SelectParams(NAME)
 
-Where NAME is one of 'testnet', 'mainnet', or 'regtest'. The chain currently
+Where NAME is one of 'testnet', 'mainnet', 'signet', or 'regtest'. The chain currently
 selected is a global variable that changes behavior everywhere, just like in
 the Satoshi codebase.
 
